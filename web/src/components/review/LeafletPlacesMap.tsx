@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
@@ -13,15 +13,28 @@ export type MapPin = {
   subtitle?: string
   /** Original reel / source link for popup card */
   reelUrl?: string
-  marker?: "dot" | "label" | "glass"
+  /** Spot lens → clay sticker pin */
+  lens?: "all" | "eat" | "see" | "do" | "stay" | null
+  marker?: "dot" | "label" | "glass" | "clay"
   /** 1-based stop index when showing a planned route */
   order?: number
 }
+
+export type RoutePathStyle =
+  | "dashed"
+  | "typed"
+  | "marching"
+  | "beads"
+  | "ribbon"
 
 export type MapRoute = {
   points: Array<{ lat: number; lng: number }>
   /** Cinema cream stroke by default */
   color?: string
+  /** Visual treatment for the planned walk path */
+  style?: RoutePathStyle
+  /** Per-leg colors for `typed` (length = points.length - 1) */
+  segmentColors?: string[]
 }
 
 export type MapVariant = "streets" | "minimal" | "dark"
@@ -44,9 +57,13 @@ type Props = {
   /** Active pin shows a detail card above the dot */
   popupOnActive?: boolean
   onAddToDay?: (id: string) => void
+  /** Open full spot details (left sidebar) */
+  onOpenDetails?: (id: string) => void
   /** Start camera when arriving from the globe fly (lat, lng). */
   introCenter?: [number, number]
   introZoom?: number
+  /** Wheel, pinch, and +/- controls for zoom */
+  zoomable?: boolean
 }
 
 export type LeafletPlacesMapHandle = {
@@ -102,29 +119,78 @@ function labeledIcon(
   const c = pinColors(theme, active)
   const badge =
     order != null
-      ? `<span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:${active ? "#c45c3a" : "#f6f1e8"};color:${active ? "#f6f1e8" : "#11100e"};font:700 9px/16px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4)">${order}</span>`
+      ? `<span style="position:absolute;top:-7px;right:-7px;z-index:2;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:${active ? "#c45c3a" : "#f6f1e8"};color:${active ? "#f6f1e8" : "#11100e"};font:700 9px/16px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4)">${order}</span>`
       : ""
   return L.divIcon({
     className: "",
     iconSize: [0, 0],
     iconAnchor: [0, 0],
     html: `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;pointer-events:${clickable ? "auto" : "none"};cursor:${clickable ? "pointer" : "default"}">
-      <span style="position:relative;background:${c.labelBg};color:${c.labelFg};font:600 10px/1.2 system-ui,sans-serif;padding:4px 8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${short}${badge}</span>
+      <span style="position:relative;display:inline-block;max-width:140px">
+        <span style="display:block;background:${c.labelBg};color:${c.labelFg};font:600 10px/1.2 system-ui,sans-serif;padding:4px 8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short}</span>
+        ${badge}
+      </span>
       <span style="width:10px;height:10px;margin-top:4px;border-radius:999px;background:${c.fill};border:2px solid ${c.border};box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>
     </div>`,
   })
 }
 
-/** Detail card anchored above the active pin. */
+function clayIconSrc(lens?: MapPin["lens"]) {
+  const key =
+    lens === "eat" ||
+    lens === "see" ||
+    lens === "do" ||
+    lens === "stay" ||
+    lens === "all"
+      ? lens
+      : "all"
+  return `/lens-icons/clay/${key}.png`
+}
+
+function clayStickerHtml(lens: MapPin["lens"], size: number, active: boolean) {
+  const src = escapeHtml(clayIconSrc(lens))
+  const glow = active
+    ? "filter:drop-shadow(0 0 1.5px #f6f1e8) drop-shadow(0 4px 10px rgba(0,0,0,.35));"
+    : "filter:drop-shadow(0 2px 6px rgba(0,0,0,.35));"
+  return `<img src="${src}" alt="" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;object-fit:contain;background:transparent;${glow}" onerror="this.onerror=null;this.style.opacity='0'" />`
+}
+
+/** Clay lens sticker as the map pin (idle). */
+function clayPinIcon(pin: MapPin, clickable = false) {
+  const active = !!pin.active
+  const size = active ? 46 : 36
+  const order =
+    pin.order != null
+      ? `<span style="position:absolute;top:-4px;right:-4px;z-index:2;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#f6f1e8;color:#11100e;font:700 9px/16px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.45)">${pin.order}</span>`
+      : ""
+  return L.divIcon({
+    className: "",
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+    html: `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;pointer-events:${clickable ? "auto" : "none"};cursor:${clickable ? "pointer" : "default"}">
+      <span style="position:relative;display:inline-block">
+        ${clayStickerHtml(pin.lens, size, active)}
+        ${order}
+      </span>
+    </div>`,
+  })
+}
+
+/** Detail card anchored above the active clay pin. */
 function popupCardIcon(pin: MapPin, theme: "default" | "cinema" = "default") {
-  const c = pinColors(theme, true)
   const name = escapeHtml(pin.name ?? "Spot")
   const sub = escapeHtml(pin.subtitle ?? "")
   const thumb = escapeHtml(pin.thumb ?? "")
-  const reel = escapeHtml(pin.reelUrl ?? "#")
+  const placeholder =
+    `<div style="width:48px;height:48px;border-radius:12px;background:rgba(246,241,232,0.14);flex-shrink:0"></div>`
+  // Hide browser broken-image glyph; swap to a soft tile on load failure.
   const media = thumb
-    ? `<img src="${thumb}" alt="" style="display:block;width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0" />`
-    : `<div style="width:48px;height:48px;border-radius:12px;background:rgba(246,241,232,0.12);flex-shrink:0"></div>`
+    ? `<img src="${thumb}" alt="" style="display:block;width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;background:rgba(246,241,232,0.14)" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{style:'width:48px;height:48px;border-radius:12px;background:rgba(246,241,232,0.14);flex-shrink:0'}))" />`
+    : placeholder
+  const pinGlyph =
+    pin.marker === "clay" || pin.lens
+      ? clayStickerHtml(pin.lens, 40, true)
+      : `<span style="width:12px;height:12px;border-radius:999px;background:${pinColors(theme, true).fill};border:2px solid ${theme === "cinema" ? "#11100e" : "#fff"};box-shadow:0 0 0 4px rgba(246,241,232,0.28),0 1px 4px rgba(0,0,0,.35)"></span>`
   return L.divIcon({
     className: "",
     iconSize: [0, 0],
@@ -140,11 +206,11 @@ function popupCardIcon(pin: MapPin, theme: "default" | "cinema" = "default") {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
           <button type="button" data-add-day style="border:0;border-radius:8px;padding:7px 8px;font:600 11px/1 system-ui,sans-serif;background:#f6f1e8;color:#11100e;cursor:pointer">Add to day</button>
-          <a data-original href="${reel}" target="_blank" rel="noreferrer" style="display:block;border-radius:8px;padding:7px 8px;font:600 11px/1 system-ui,sans-serif;background:rgba(255,255,255,0.1);color:#f6f1e8;text-align:center;text-decoration:none">Original</a>
+          <button type="button" data-open-details style="border:0;border-radius:8px;padding:7px 8px;font:600 11px/1 system-ui,sans-serif;background:rgba(255,255,255,0.1);color:#f6f1e8;cursor:pointer">Details</button>
         </div>
       </div>
       <span style="width:1px;height:8px;background:rgba(246,241,232,0.45);margin-top:2px"></span>
-      <span style="width:12px;height:12px;border-radius:999px;background:${c.fill};border:2px solid ${theme === "cinema" ? "#11100e" : c.border};box-shadow:${theme === "cinema" ? "0 0 0 4px rgba(246,241,232,0.28),0 1px 4px rgba(0,0,0,.35)" : "0 1px 4px rgba(0,0,0,.35)"}"></span>
+      ${pinGlyph}
     </div>`,
   })
 }
@@ -187,6 +253,112 @@ function glassIcon(active = false) {
   })
 }
 
+function drawRoute(layer: L.LayerGroup, route: MapRoute) {
+  const latlngs = route.points.map((p) => [p.lat, p.lng] as [number, number])
+  if (latlngs.length < 2) return
+  const color = route.color ?? "#f6f1e8"
+  const style = route.style ?? "dashed"
+
+  if (style === "ribbon") {
+    L.polyline(latlngs, {
+      color,
+      weight: 22,
+      opacity: 0.22,
+      lineJoin: "round",
+      lineCap: "round",
+    }).addTo(layer)
+    L.polyline(latlngs, {
+      color,
+      weight: 5,
+      opacity: 0.9,
+      lineJoin: "round",
+      lineCap: "round",
+    }).addTo(layer)
+    return
+  }
+
+  if (style === "typed") {
+    for (let i = 0; i < latlngs.length - 1; i++) {
+      const legColor = route.segmentColors?.[i] ?? color
+      L.polyline([latlngs[i], latlngs[i + 1]], {
+        color: "#11100e",
+        weight: 7,
+        opacity: 0.35,
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(layer)
+      L.polyline([latlngs[i], latlngs[i + 1]], {
+        color: legColor,
+        weight: 4,
+        opacity: 0.95,
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(layer)
+    }
+    return
+  }
+
+  if (style === "beads") {
+    L.polyline(latlngs, {
+      color,
+      weight: 1.5,
+      opacity: 0.55,
+      lineJoin: "round",
+      lineCap: "round",
+    }).addTo(layer)
+    for (let i = 0; i < latlngs.length - 1; i++) {
+      const a = latlngs[i]
+      const b = latlngs[i + 1]
+      const mid: [number, number] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+      L.circleMarker(mid, {
+        radius: 3.5,
+        color: "#11100e",
+        weight: 1.5,
+        fillColor: color,
+        fillOpacity: 1,
+      }).addTo(layer)
+    }
+    return
+  }
+
+  if (style === "marching") {
+    L.polyline(latlngs, {
+      color: "#11100e",
+      weight: 6,
+      opacity: 0.3,
+      lineJoin: "round",
+      lineCap: "round",
+    }).addTo(layer)
+    L.polyline(latlngs, {
+      color,
+      weight: 3.5,
+      opacity: 0.95,
+      lineJoin: "round",
+      lineCap: "round",
+      dashArray: "10 14",
+      className: "td-route-marching",
+    }).addTo(layer)
+    return
+  }
+
+  // dashed (default)
+  L.polyline(latlngs, {
+    color: "#11100e",
+    weight: 6,
+    opacity: 0.35,
+    lineJoin: "round",
+    lineCap: "round",
+  }).addTo(layer)
+  L.polyline(latlngs, {
+    color,
+    weight: 3.5,
+    opacity: 0.9,
+    lineJoin: "round",
+    lineCap: "round",
+    dashArray: "8 10",
+  }).addTo(layer)
+}
+
 function iconForPin(
   pin: MapPin,
   theme: "default" | "cinema" = "default",
@@ -197,7 +369,17 @@ function iconForPin(
     return popupCardIcon(pin, theme)
   }
   const style =
-    pin.marker ?? (pin.thumb ? "glass" : pin.name ? "label" : "dot")
+    pin.marker ??
+    (pin.lens
+      ? "clay"
+      : pin.thumb
+        ? "glass"
+        : pin.name
+          ? "label"
+          : "dot")
+  if (style === "clay") {
+    return clayPinIcon(pin, clickable)
+  }
   if (style === "glass") {
     return glassIcon(!!pin.active)
   }
@@ -226,8 +408,10 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
       pinTheme = "default",
       popupOnActive = false,
       onAddToDay,
+      onOpenDetails,
       introCenter,
       introZoom,
+      zoomable = false,
     },
     ref
   ) {
@@ -239,17 +423,20 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
   const maxZoomRef = useRef(fitMaxZoom)
   const onPinSelectRef = useRef(onPinSelect)
   const onAddToDayRef = useRef(onAddToDay)
+  const onOpenDetailsRef = useRef(onOpenDetails)
   const popupOnActiveRef = useRef(popupOnActive)
   const introCenterRef = useRef(introCenter)
   const introZoomRef = useRef(introZoom)
   const introDoneRef = useRef(false)
   const prevActiveIdRef = useRef<string | null>(null)
+  const [zoomUi, setZoomUi] = useState({ z: 12, min: 2, max: 16 })
   pinsRef.current = pins
   routeRef.current = route
   paddingRef.current = paddingBottom
   maxZoomRef.current = fitMaxZoom
   onPinSelectRef.current = onPinSelect
   onAddToDayRef.current = onAddToDay
+  onOpenDetailsRef.current = onOpenDetails
   popupOnActiveRef.current = popupOnActive
   introCenterRef.current = introCenter
   introZoomRef.current = introZoom
@@ -272,10 +459,10 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
           resolve()
         }
         const center = map.getCenter()
-        // Short ease toward regional framing; navigate before it fully settles.
+        // Brief ease only; LocationPage navigates without waiting for settle.
         map.stop()
-        map.flyTo(center, 7.2, { duration: 0.55, easeLinearity: 0.4 })
-        window.setTimeout(done, 480)
+        map.flyTo(center, 7.8, { duration: 0.22, easeLinearity: 0.55 })
+        window.setTimeout(done, 160)
       }),
   }))
 
@@ -284,24 +471,35 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
     if (!el) return
     introDoneRef.current = false
 
+    const tile = TILES[variant]
     const map = L.map(el, {
       zoomControl: false,
       attributionControl: false,
       dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
+      scrollWheelZoom: zoomable,
+      doubleClickZoom: zoomable,
       boxZoom: false,
-      keyboard: false,
-      touchZoom: false,
+      keyboard: zoomable,
+      touchZoom: zoomable,
+      minZoom: 3,
+      maxZoom: tile.maxZoom,
     })
 
-    const tile = TILES[variant]
     L.tileLayer(tile.url, {
       maxZoom: tile.maxZoom,
       ...(tile.subdomains ? { subdomains: tile.subdomains } : {}),
     }).addTo(map)
 
     mapRef.current = map
+    const syncZoomUi = () => {
+      setZoomUi({
+        z: map.getZoom(),
+        min: map.getMinZoom(),
+        max: map.getMaxZoom(),
+      })
+    }
+    syncZoomUi()
+    map.on("zoomend", syncZoomUi)
 
     function fit(animate: boolean) {
       const current = pinsRef.current
@@ -347,16 +545,21 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
     })
 
     return () => {
+      map.off("zoomend", syncZoomUi)
       ro.disconnect()
       map.remove()
       mapRef.current = null
     }
-  }, [variant])
+  }, [variant, zoomable])
 
   const layoutKey = pins.map((p) => `${p.id}:${p.lat}:${p.lng}`).join("|")
   const routeKey =
-    route?.points.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join("|") ??
-    ""
+    (route
+      ? `${route.style ?? "dashed"}:${route.color ?? ""}:${(route.segmentColors ?? []).join(",")}:`
+      : "") +
+    (route?.points
+      .map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`)
+      .join("|") ?? "")
   const layoutKeyRef = useRef("")
 
   useEffect(() => {
@@ -364,8 +567,16 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
     if (!map) return
 
     const clickable = !!onPinSelectRef.current
-    if (clickable) {
+    if (clickable || zoomable) {
       map.dragging.enable()
+    } else {
+      map.dragging.disable()
+    }
+    if (zoomable) {
+      map.scrollWheelZoom.enable()
+      map.touchZoom.enable()
+      map.doubleClickZoom.enable()
+      map.keyboard.enable()
     }
 
     const centerOnPin = (pin: MapPin, forPopup: boolean) => {
@@ -381,24 +592,7 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
     const layer = L.layerGroup().addTo(map)
 
     if (route && route.points.length >= 2) {
-      const latlngs = route.points.map(
-        (p) => [p.lat, p.lng] as [number, number]
-      )
-      L.polyline(latlngs, {
-        color: "#11100e",
-        weight: 6,
-        opacity: 0.35,
-        lineJoin: "round",
-        lineCap: "round",
-      }).addTo(layer)
-      L.polyline(latlngs, {
-        color: route.color ?? "#f6f1e8",
-        weight: 3.5,
-        opacity: 0.9,
-        lineJoin: "round",
-        lineCap: "round",
-        dashArray: "8 10",
-      }).addTo(layer)
+      drawRoute(layer, route)
     }
 
     for (const pin of pins) {
@@ -411,7 +605,11 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
       if (clickable) {
         marker.on("click", (e) => {
           const t = e.originalEvent.target as HTMLElement | null
-          if (t?.closest?.("[data-add-day], [data-original], [data-pin-popup]")) {
+          if (
+            t?.closest?.(
+              "[data-add-day], [data-open-details], [data-pin-popup]"
+            )
+          ) {
             return
           }
           onPinSelectRef.current?.(pin.id)
@@ -428,9 +626,11 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
             onAddToDayRef.current?.(pin.id)
           })
         root
-          ?.querySelector("[data-original]")
+          ?.querySelector("[data-open-details]")
           ?.addEventListener("click", (ev) => {
+            ev.preventDefault()
             ev.stopPropagation()
+            onOpenDetailsRef.current?.(pin.id)
           })
       }
     }
@@ -484,16 +684,49 @@ export const LeafletPlacesMap = forwardRef<LeafletPlacesMapHandle, Props>(
     fitMaxZoom,
     onPinSelect,
     onAddToDay,
+    onOpenDetails,
     pinTheme,
     popupOnActive,
+    zoomable,
   ])
 
+  const bumpZoom = (delta: number) => {
+    const map = mapRef.current
+    if (!map) return
+    map.setZoom(map.getZoom() + delta)
+  }
+
   return (
-    <div
-      ref={containerRef}
-      className={`absolute inset-0 z-0 bg-[#121110] [&_.leaflet-tile-pane]:saturate-[0.55] [&_.leaflet-tile-pane]:contrast-[0.92] ${className}`}
-      aria-hidden
-    />
+    <div className={`absolute inset-0 z-0 ${className}`}>
+      <div
+        ref={containerRef}
+        className="absolute inset-0 bg-[#121110] [&_.leaflet-tile-pane]:saturate-[0.55] [&_.leaflet-tile-pane]:contrast-[0.92]"
+        aria-hidden={!zoomable}
+      />
+      {zoomable ? (
+        <div className="pointer-events-auto absolute right-3 bottom-28 z-[5] flex flex-col overflow-hidden rounded-xl border border-white/15 bg-black/70 shadow-lg backdrop-blur-md">
+          <button
+            type="button"
+            aria-label="Zoom in"
+            disabled={zoomUi.z >= zoomUi.max - 0.01}
+            onClick={() => bumpZoom(1)}
+            className="flex size-10 items-center justify-center text-lg font-semibold text-[#f6f1e8] hover:bg-white/10 disabled:opacity-35"
+          >
+            +
+          </button>
+          <span className="h-px w-full bg-white/15" aria-hidden />
+          <button
+            type="button"
+            aria-label="Zoom out"
+            disabled={zoomUi.z <= zoomUi.min + 0.01}
+            onClick={() => bumpZoom(-1)}
+            className="flex size-10 items-center justify-center text-lg font-semibold text-[#f6f1e8] hover:bg-white/10 disabled:opacity-35"
+          >
+            −
+          </button>
+        </div>
+      ) : null}
+    </div>
   )
   }
 )

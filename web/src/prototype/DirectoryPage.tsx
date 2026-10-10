@@ -57,7 +57,7 @@ export function DirectoryPage() {
     if (!returning.current) return
     returning.current = false
     // Let the globe mount at the closer zoom, then ease out.
-    const t = window.setTimeout(() => setGlobeZoom(DIRECTORY_GLOBE_ZOOM), 420)
+    const t = window.setTimeout(() => setGlobeZoom(DIRECTORY_GLOBE_ZOOM), 200)
     navigate(
       { pathname: location.pathname, search: location.search },
       { replace: true, state: { cityId: activeCityId } }

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
-import { Badge } from "@/components/ui/badge"
 import {
   Sheet,
   SheetContent,
@@ -14,7 +13,7 @@ import {
 } from "@/components/review/LeafletPlacesMap"
 import { cityById, type Lens } from "@/data/demo"
 import { CinemaChrome, CinemaStatus } from "./CinemaChrome"
-import { useDigest, type DaySlot } from "./DigestContext"
+import { useDigest } from "./DigestContext"
 import {
   RETURN_GLOBE_ZOOM,
   type PlaceHandoff,
@@ -25,20 +24,43 @@ import {
   planDayFromSpots,
   type DayItinerary,
 } from "./planDay"
+import { clayLensIcon, lensFilterLabels } from "./lensIcons"
 import { SortSheet } from "./SortSheet"
+import { cn } from "@/lib/utils"
 
 const lensOptions: Array<Lens | "all"> = ["all", "eat", "see", "do", "stay"]
-
-const slotLabels: Record<DaySlot, string> = {
-  am: "AM",
-  mid: "Mid",
-  pm: "PM",
-}
 
 function lensWord(lens: Lens) {
   if (lens === "see") return "sightseeing"
   if (!lens) return "spot"
   return lens
+}
+
+function LensBadge({
+  lens,
+  className = "",
+}: {
+  lens: Lens
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        "relative z-[1] flex size-7 shrink-0 items-center justify-center",
+        className
+      )}
+      aria-label={lensWord(lens)}
+    >
+      <img
+        src={clayLensIcon(lens)}
+        alt=""
+        width={28}
+        height={28}
+        draggable={false}
+        className="size-full object-contain"
+      />
+    </span>
+  )
 }
 
 function readHandoff(state: unknown, cityId: string): PlaceHandoff | null {
@@ -70,8 +92,6 @@ export function LocationPage() {
     spotsFor,
     tipsFor,
     unsortedFor,
-    countsFor,
-    dayPlanFor,
     setDaySlot,
     applyDayPlan,
   } = useDigest()
@@ -79,8 +99,6 @@ export function LocationPage() {
   const spots = spotsFor(city.id)
   const tips = tipsFor(city.id)
   const unsorted = unsortedFor(city.id)
-  const counts = countsFor(city.id)
-  const dayPlan = dayPlanFor(city.id)
 
   const [lens, setLens] = useState<Lens | "all">("all")
   const [activeSpotId, setActiveSpotId] = useState(spots[0]?.id)
@@ -89,6 +107,7 @@ export function LocationPage() {
   const [leaving, setLeaving] = useState(false)
   const [itinerary, setItinerary] = useState<DayItinerary | null>(null)
   const [timelineOpen, setTimelineOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   useEffect(() => {
     if (!handoff) return
@@ -101,21 +120,19 @@ export function LocationPage() {
     return () => window.clearTimeout(t)
   }, [handoff, navigate, location.pathname, location.search])
 
-  const goBackToPlaces = async () => {
+  const goBackToPlaces = () => {
     if (leaving) return
     setLeaving(true)
-    await (mapRef.current?.zoomOut() ?? Promise.resolve())
+    // Soft map ease in the background. Skip View Transitions on return:
+    // snapshotting Leaflet then remounting MapLibre is what felt laggy.
+    void mapRef.current?.zoomOut()
     const returnHandoff: ReturnHandoff = {
       cityId: city.id,
       zoom: RETURN_GLOBE_ZOOM,
     }
-    const go = () =>
+    window.setTimeout(() => {
       navigate("/", { state: { cityId: city.id, returnHandoff } })
-    const doc = document as Document & {
-      startViewTransition?: (cb: () => void) => void
-    }
-    if (doc.startViewTransition) doc.startViewTransition(go)
-    else go()
+    }, 140)
   }
 
   const visibleSpots = useMemo(() => {
@@ -151,6 +168,7 @@ export function LocationPage() {
     const base = itinerary
       ? itinerary.stops.map((stop) => stop.save)
       : visibleSpots
+    const planMode = !!itinerary
     return base
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => {
@@ -163,8 +181,10 @@ export function LocationPage() {
           thumb: s.thumb,
           subtitle: `${lensLabel} · ${s.source}`,
           reelUrl: s.reelUrl,
+          lens: (s.lens ?? "all") as "eat" | "see" | "do" | "stay" | "all",
           active: s.id === activeSpot?.id,
-          marker: "label" as const,
+          // Plan day uses Walk Ribbon pins (labels + order). Browse stays clay.
+          marker: planMode ? ("label" as const) : ("clay" as const),
           order: orderById.get(s.id),
         }
       })
@@ -173,6 +193,8 @@ export function LocationPage() {
   const route = useMemo(() => {
     if (!itinerary || itinerary.stops.length < 2) return null
     return {
+      style: "ribbon" as const,
+      color: "#f6f1e8",
       points: itinerary.stops
         .filter((s) => s.save.lat != null && s.save.lng != null)
         .map((s) => ({
@@ -213,22 +235,27 @@ export function LocationPage() {
         route={route}
         variant="dark"
         fitMaxZoom={14}
-        paddingBottom={itinerary ? 220 : 120}
+        paddingBottom={80}
         pinTheme="cinema"
+        zoomable
         popupOnActive={!itinerary}
         introCenter={handoff ? [handoff.lat, handoff.lng] : undefined}
         introZoom={handoff?.zoom}
         onPinSelect={(id) => setActiveSpotId(id)}
         onAddToDay={(id) => setDaySlot(city.id, "am", id)}
+        onOpenDetails={(id) => {
+          setActiveSpotId(id)
+          setDetailsOpen(true)
+        }}
       />
       <div
-        className={`pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#11100e]/90 via-transparent to-[#11100e]/40 transition-opacity duration-300 ${
+        className={`pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#11100e]/90 via-transparent to-[#11100e]/40 transition-opacity duration-150 ${
           chromeIn && !leaving ? "opacity-100" : "opacity-0"
         }`}
       />
 
       <div
-        className={`pointer-events-none relative z-10 flex min-h-svh flex-col transition-opacity duration-300 ${
+        className={`pointer-events-none relative z-10 flex min-h-svh flex-col transition-opacity duration-150 ${
           chromeIn && !leaving ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -237,7 +264,7 @@ export function LocationPage() {
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => void goBackToPlaces()}
+              onClick={goBackToPlaces}
               className="pointer-events-auto rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/15"
             >
               ← Places
@@ -254,6 +281,24 @@ export function LocationPage() {
                 {itinerary ? "Re-plan" : "Plan day"}
               </button>
             ) : null}
+            {itinerary ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setTimelineOpen(true)}
+                  className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/15"
+                >
+                  Timeline
+                </button>
+                <button
+                  type="button"
+                  onClick={clearPlan}
+                  className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+                >
+                  Clear
+                </button>
+              </>
+            ) : null}
             <button
               type="button"
               className="max-w-[9rem] truncate rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/15"
@@ -264,162 +309,140 @@ export function LocationPage() {
           </div>
         </div>
 
-        <div className="pointer-events-auto flex flex-wrap gap-1.5 px-4 pb-2">
-          {lensOptions.map((l) => (
-            <Badge
-              key={l}
-              role="button"
-              onClick={() => {
-                setLens(l)
-                if (itinerary) setItinerary(null)
-              }}
-              className={
-                lens === l && !itinerary
-                  ? "cursor-pointer rounded-full border-0 bg-[#f6f1e8] text-[#11100e] capitalize hover:bg-white"
-                  : "cursor-pointer rounded-full border border-white/15 bg-white/5 text-white/75 capitalize hover:bg-white/10"
-              }
-            >
-              {l === "all" ? "All" : l}
-            </Badge>
-          ))}
+        <div className="pointer-events-auto flex gap-2 overflow-x-auto px-4 pb-2">
+          {lensOptions.map((l) => {
+            const on = lens === l && !itinerary
+            const label = lensFilterLabels[l === null ? "all" : l]
+            return (
+              <button
+                key={String(l)}
+                type="button"
+                onClick={() => {
+                  setLens(l)
+                  if (itinerary) setItinerary(null)
+                }}
+                className={cn(
+                  "flex w-[64px] shrink-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-all",
+                  on ? "text-[#f6f1e8]" : "text-white/55"
+                )}
+              >
+                <img
+                  src={clayLensIcon(l)}
+                  alt=""
+                  width={44}
+                  height={44}
+                  draggable={false}
+                  className={cn(
+                    "size-11 object-contain transition-transform",
+                    on
+                      ? "scale-110 drop-shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
+                      : "opacity-85"
+                  )}
+                />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em]">
+                  {label}
+                </span>
+              </button>
+            )
+          })}
           {unsorted.length > 0 ? (
-            <Badge
-              role="button"
+            <button
+              type="button"
               onClick={() => setSortOpen(true)}
-              className="cursor-pointer rounded-full border border-amber-300/40 bg-amber-300/10 text-amber-100 hover:bg-amber-300/20"
+              className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-amber-300/40 text-[10px] font-semibold tracking-[0.08em] text-amber-100 uppercase"
             >
-              {unsorted.length} unsorted
-            </Badge>
+              <span className="text-sm font-bold leading-none">{unsorted.length}</span>
+              Sort
+            </button>
           ) : null}
         </div>
 
         <div className="min-h-0 flex-1" />
 
         {!activeSpot && !itinerary ? (
-          <div className="pointer-events-auto mx-3 mb-2 rounded-2xl border border-dashed border-white/20 bg-black/50 px-4 py-4 text-center text-sm text-white/60">
+          <div className="pointer-events-auto mx-3 mb-4 rounded-2xl border border-dashed border-white/20 bg-black/50 px-4 py-4 text-center text-sm text-white/60">
             {spots.length === 0
               ? "No spots yet. Sort the pile or open another place."
               : "No spots in this lens. Try All."}
           </div>
         ) : null}
+      </div>
 
-        <div className="pointer-events-auto mx-3 mb-4 space-y-2">
-          {itinerary ? (
-            <div className="rounded-2xl border border-white/10 bg-black/75 p-3 backdrop-blur-md">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#f6f1e8]">
-                    {itinerary.stops.length} stops · ~{itinerary.totalWalkMinutes}{" "}
-                    min walk
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-white/55">
-                    {itinerary.lensMix}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
+      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <SheetContent
+          side="left"
+          className="w-[min(100%,22rem)] border-white/10 bg-[#1c1b19] p-0 text-[#f6f1e8] sm:max-w-sm"
+        >
+          {activeSpot ? (
+            <div className="flex h-full flex-col">
+              <div className="relative h-44 shrink-0 bg-[#2a2723]">
+                <img
+                  src={activeSpot.thumb}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none"
+                  }}
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1c1b19] via-transparent to-black/20" />
+              </div>
+              <SheetHeader className="gap-1 px-4 pt-3 text-left">
+                <SheetTitle className="font-heading text-xl text-[#f6f1e8]">
+                  {activeSpot.title}
+                </SheetTitle>
+                <SheetDescription className="text-white/55">
+                  {lensWord(activeSpot.lens).replace(/^./, (c) =>
+                    c.toUpperCase()
+                  )}{" "}
+                  · {activeSpot.source}
+                  {activeSpot.venueName ? ` · ${activeSpot.venueName}` : ""}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="flex flex-1 flex-col gap-3 px-4 pt-4 pb-6">
+                <p className="text-sm leading-relaxed text-white/70">
+                  Saved from {activeSpot.source}. Add it to your day, or open
+                  the original reel to rewatch why you kept it.
+                </p>
+                <div className="mt-auto grid grid-cols-1 gap-2">
                   <button
                     type="button"
-                    onClick={() => setTimelineOpen(true)}
-                    className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-white/15"
+                    onClick={() => {
+                      setDaySlot(city.id, "am", activeSpot.id)
+                      setDetailsOpen(false)
+                    }}
+                    className="rounded-xl bg-[#f6f1e8] px-4 py-2.5 text-sm font-semibold text-[#11100e] hover:bg-white"
                   >
-                    Timeline
+                    Add to day
                   </button>
+                  <a
+                    href={activeSpot.reelUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/15"
+                  >
+                    Open original reel
+                  </a>
                   <button
                     type="button"
-                    onClick={clearPlan}
-                    className="rounded-full border border-white/15 bg-transparent px-2.5 py-1 text-[10px] text-white/60 hover:bg-white/10 hover:text-white"
+                    onClick={() => setDetailsOpen(false)}
+                    className="rounded-xl px-4 py-2 text-sm text-white/55 hover:text-white"
                   >
-                    Clear
+                    Close
                   </button>
                 </div>
               </div>
-              <ol className="mt-3 space-y-2">
-                {itinerary.stops.map((stop) => (
-                  <li key={stop.save.id}>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSpotId(stop.save.id)}
-                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors ${
-                        activeSpot?.id === stop.save.id
-                          ? "bg-white/10"
-                          : "hover:bg-white/5"
-                      }`}
-                    >
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f6f1e8] text-[10px] font-bold text-[#11100e]">
-                        {stop.order}
-                      </span>
-                      <span className="w-10 shrink-0 text-[11px] font-semibold tabular-nums text-amber-100/90">
-                        {stop.timeLabel}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-medium text-[#f6f1e8]">
-                          {stop.save.title}
-                        </span>
-                        <span className="text-[10px] text-white/45">
-                          {lensWord(stop.save.lens)}
-                          {stop.walkMinutesFromPrev != null
-                            ? ` · ${stop.walkMinutesFromPrev} min walk`
-                            : ""}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
             </div>
-          ) : canPlan ? (
-            <button
-              type="button"
-              onClick={runPlanDay}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#f6f1e8] px-4 py-3 text-sm font-semibold text-[#11100e] hover:bg-white"
-            >
-              Plan day
-              <span className="text-[11px] font-medium text-[#11100e]/55">
-                route · timeline
-              </span>
-            </button>
-          ) : null}
+          ) : (
+            <div className="p-4 text-sm text-white/55">No spot selected.</div>
+          )}
+        </SheetContent>
+      </Sheet>
 
-          <div className="grid grid-cols-3 gap-1.5">
-            {(["am", "mid", "pm"] as DaySlot[]).map((slot) => {
-              const filled = spots.find((s) => s.id === dayPlan[slot])
-              return (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => {
-                    if (activeSpot) setDaySlot(city.id, slot, activeSpot.id)
-                  }}
-                  className={
-                    filled
-                      ? "rounded-xl border border-amber-300/40 bg-amber-300/15 px-2 py-2 text-center text-[10px] font-semibold text-[#f6f1e8]"
-                      : "rounded-xl border border-dashed border-white/25 px-2 py-2 text-center text-[10px] text-white/45"
-                  }
-                >
-                  {filled
-                    ? `${slotLabels[slot]} · ${filled.title.split(" ").slice(0, 2).join(" ")}`
-                    : slotLabels[slot]}
-                </button>
-              )
-            })}
-          </div>
-
-          <p className="text-center text-[10px] text-white/35">
-            {counts.spots} pins · {counts.tips} tips
-            {counts.unsorted > 0 ? ` · ${counts.unsorted} unsorted` : ""}
-            {itinerary
-              ? " · route on map"
-              : activeSpot
-                ? " · tap AM/Mid/PM to schedule"
-                : ""}
-          </p>
-        </div>
-      </div>
-
-      <Sheet open={timelineOpen} onOpenChange={setTimelineOpen}>
+      <Sheet open={timelineOpen} onOpenChange={setTimelineOpen} modal={false}>
         <SheetContent
-          side="bottom"
-          className="max-h-[75vh] rounded-t-3xl border-white/10 bg-[#1c1b19] text-[#f6f1e8]"
+          side="right"
+          showOverlay={false}
+          className="w-[min(100%,24rem)] border-white/10 bg-[#1c1b19] text-[#f6f1e8] shadow-[-12px_0_40px_rgba(0,0,0,0.45)] sm:max-w-md"
         >
           <SheetHeader className="text-left">
             <SheetTitle className="font-heading text-[#f6f1e8]">
@@ -431,7 +454,7 @@ export function LocationPage() {
                 : "No plan yet."}
             </SheetDescription>
           </SheetHeader>
-          <div className="space-y-0 px-4 pb-6">
+          <div className="min-h-0 flex-1 space-y-0 overflow-y-auto px-4 pb-6">
             {!itinerary ? (
               <p className="text-sm text-white/55">
                 Tap Plan day to build a walkable loop from your saves.
@@ -442,12 +465,10 @@ export function LocationPage() {
                   {i < itinerary.stops.length - 1 ? (
                     <span
                       aria-hidden
-                      className="absolute left-[11px] top-7 bottom-0 w-px bg-white/15"
+                      className="absolute left-[13px] top-8 bottom-0 w-px bg-white/15"
                     />
                   ) : null}
-                  <span className="relative z-[1] mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f6f1e8] text-[10px] font-bold text-[#11100e]">
-                    {stop.order}
-                  </span>
+                  <LensBadge lens={stop.save.lens} className="mt-0.5" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <p className="text-sm font-semibold leading-snug">
@@ -521,7 +542,10 @@ export function LocationPage() {
                   <img
                     src={tip.thumb}
                     alt=""
-                    className="size-12 rounded-xl object-cover"
+                    className="size-12 rounded-xl bg-white/10 object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.visibility = "hidden"
+                    }}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{tip.title}</p>

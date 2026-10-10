@@ -72,7 +72,7 @@ function markerHtml(
 
   if (popupOnActive && active) {
     const media = thumb
-      ? `<img src="${thumb}" alt="" style="display:block;width:100%;height:64px;object-fit:cover;filter:none;opacity:1" />`
+      ? `<img src="${thumb}" alt="" style="display:block;width:100%;height:64px;object-fit:cover;filter:none;opacity:1;background:#ddd6c8" onerror="this.onerror=null;this.style.display='none'" />`
       : ""
     return `<div role="group" aria-label="${name}" style="display:flex;flex-direction:column;align-items:center;width:140px">
       <div data-pin-card style="cursor:pointer;width:140px;overflow:hidden;border-radius:14px;border:1px solid rgba(246,241,232,0.55);background:#f6f1e8;box-shadow:0 12px 32px rgba(0,0,0,0.5);color:#11100e;text-align:left">

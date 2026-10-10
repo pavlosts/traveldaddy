@@ -33,6 +33,9 @@ export function ReviewDirections() {
             <Button asChild variant="secondary">
               <Link to="/review/motion">Motion mocks</Link>
             </Button>
+            <Button asChild variant="secondary">
+              <Link to="/review/route-path">Route path mocks</Link>
+            </Button>
           </div>
         </header>
 

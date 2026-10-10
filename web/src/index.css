@@ -176,9 +176,24 @@
   perspective: 900px;
 }
 
+/* Day-plan route: marching ants (Leaflet path className) */
+.td-route-marching {
+  animation: td-route-march 1.1s linear infinite;
+}
+
+@keyframes td-route-march {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .motion-slide-next,
   .motion-slide-prev {
+    animation: none !important;
+  }
+
+  .td-route-marching {
     animation: none !important;
   }
 }

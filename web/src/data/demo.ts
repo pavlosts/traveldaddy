@@ -100,7 +100,7 @@ export const saves: Save[] = [
     lens: "see",
     title: "Lycabettus night lights",
     thumb:
-      "https://images.unsplash.com/photo-1503894476791-84acb3903116?w=600&q=80",
+      "https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=80",
     source: "tiktok",
     reelUrl: "https://example.com/short/athens-lycabettus-dummy",
     lat: 37.9795,

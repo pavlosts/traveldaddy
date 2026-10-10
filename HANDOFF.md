@@ -16,6 +16,7 @@ Hackathon short. Expand when building for real.
 - `/place/:cityId` location digest (working).
 - `/review` overall concept comparisons.
 - `/review/motion` Cinema Map motion recipe mocks (Round 2: photo stack, story carousel, fan stack, flying posters, coverflow, card swap).
+- `/review/route-path` day-plan walk path style mocks (5 options).
 
 ## Viewports
 

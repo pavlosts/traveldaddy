@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type Lens = "all" | "eat" | "see" | "do" | "stay"
-type IconStyle = "clay" | "flat" | "engraved" | "enamel" | "sketch"
 
 const LENSES: Lens[] = ["all", "eat", "see", "do", "stay"]
 const LABELS: Record<Lens, string> = {
@@ -16,11 +15,18 @@ const LABELS: Record<Lens, string> = {
   stay: "Stay",
 }
 
-function iconSrc(style: IconStyle, lens: Lens) {
-  return `/lens-icons/${style}/${lens}.jpg`
+/** Locked art direction: soft clay 3D. */
+function clay(lens: Lens) {
+  return `/lens-icons/clay/${lens}.png`
 }
 
-function Stage({ children }: { children: ReactNode }) {
+function Stage({
+  children,
+  bottom,
+}: {
+  children: ReactNode
+  bottom?: ReactNode
+}) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#11100e]">
       <div
@@ -31,14 +37,19 @@ function Stage({ children }: { children: ReactNode }) {
           backgroundSize: "28px 28px",
         }}
       />
-      <div className="relative px-4 pb-4 pt-10">
+      <div className="relative flex min-h-[280px] flex-col px-4 pt-10 pb-4">
         <div className="mb-3 flex items-center gap-2">
           <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             ← Places
           </span>
           <span className="font-heading text-xl text-[#f6f1e8]">Athens</span>
+          <span className="ml-auto rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white">
+            Tips · 1
+          </span>
         </div>
         {children}
+        <div className="min-h-0 flex-1" />
+        {bottom}
       </div>
     </div>
   )
@@ -79,20 +90,18 @@ function OptionBlock({
   )
 }
 
-function Illu({
-  style,
+function ClayImg({
   kind,
-  size = 28,
+  size,
   className,
 }: {
-  style: IconStyle
   kind: Lens
-  size?: number
+  size: number
   className?: string
 }) {
   return (
     <img
-      src={iconSrc(style, kind)}
+      src={clay(kind)}
       alt=""
       width={size}
       height={size}
@@ -102,17 +111,17 @@ function Illu({
   )
 }
 
-/** Shared strip so style is the only variable. */
-function StyleStrip({
-  style,
-  imgClass,
-}: {
-  style: IconStyle
-  imgClass?: string
-}) {
+/** A: clay stickers in the existing pill row. */
+function OptionA() {
   const [lens, setLens] = useState<Lens>("eat")
   return (
-    <Stage>
+    <Stage
+      bottom={
+        <p className="text-center text-[10px] text-white/35">
+          7 pins · 1 tip · 1 unsorted
+        </p>
+      }
+    >
       <div className="flex flex-wrap gap-1.5">
         {LENSES.map((l) => {
           const on = lens === l
@@ -122,18 +131,13 @@ function StyleStrip({
               type="button"
               onClick={() => setLens(l)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs font-medium capitalize transition-colors",
+                "inline-flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs font-medium capitalize",
                 on
                   ? "bg-[#f6f1e8] text-[#11100e]"
-                  : "border border-white/15 bg-white/5 text-white/85 hover:bg-white/10"
+                  : "border border-white/15 bg-white/5 text-white/85"
               )}
             >
-              <Illu
-                style={style}
-                kind={l}
-                size={26}
-                className={cn("rounded-[30%]", imgClass)}
-              />
+              <ClayImg kind={l} size={26} className="rounded-[30%]" />
               {LABELS[l]}
             </button>
           )
@@ -149,29 +153,217 @@ function StyleStrip({
   )
 }
 
-function StyleRoster({
-  style,
-  imgClass,
-}: {
-  style: IconStyle
-  imgClass?: string
-}) {
+/** B: icon-first sticker shelf under the title. */
+function OptionB() {
+  const [lens, setLens] = useState<Lens>("eat")
   return (
-    <div className="mb-3 flex flex-wrap gap-3">
-      {LENSES.map((l) => (
-        <div key={l} className="flex flex-col items-center gap-1">
-          <Illu
-            style={style}
-            kind={l}
-            size={56}
-            className={cn("rounded-2xl shadow-sm", imgClass)}
-          />
-          <span className="text-[10px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-            {LABELS[l]}
-          </span>
+    <Stage
+      bottom={
+        <p className="text-center text-[10px] text-white/35">
+          Filtering · {LABELS[lens].toLowerCase()}
+        </p>
+      }
+    >
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {LENSES.map((l) => {
+          const on = lens === l
+          return (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLens(l)}
+              className={cn(
+                "flex w-[64px] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-2 transition-all",
+                on ? "text-[#f6f1e8]" : "text-white/55"
+              )}
+            >
+              <ClayImg
+                kind={l}
+                size={44}
+                className={cn(
+                  "rounded-[28%] transition-transform",
+                  on
+                    ? "scale-110 drop-shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
+                    : "opacity-75"
+                )}
+              />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em]">
+                {LABELS[l]}
+              </span>
+            </button>
+          )
+        })}
+        <button
+          type="button"
+          className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-amber-300/40 text-[10px] font-semibold tracking-[0.08em] text-amber-100 uppercase"
+        >
+          <span className="text-sm font-bold">1</span>
+          Sort
+        </button>
+      </div>
+    </Stage>
+  )
+}
+
+/** C: expanding clay rail; only active shows the word. */
+function OptionC() {
+  const [lens, setLens] = useState<Lens>("eat")
+  return (
+    <Stage>
+      <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/45 p-1 backdrop-blur">
+        {LENSES.map((l) => {
+          const on = lens === l
+          return (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLens(l)}
+              aria-label={LABELS[l]}
+              aria-pressed={on}
+              className={cn(
+                "inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-full transition-all duration-300",
+                on
+                  ? "bg-[#f6f1e8] px-3 text-[#11100e]"
+                  : "w-11 hover:bg-white/10"
+              )}
+            >
+              <ClayImg kind={l} size={30} className="rounded-[32%]" />
+              <span
+                className={cn(
+                  "text-xs font-semibold capitalize whitespace-nowrap transition-all duration-300",
+                  on ? "max-w-[4rem] opacity-100" : "max-w-0 opacity-0"
+                )}
+              >
+                {LABELS[l]}
+              </span>
+            </button>
+          )
+        })}
+        <button
+          type="button"
+          className="ml-0.5 inline-flex h-11 items-center rounded-full bg-amber-300/15 px-2.5 text-[11px] font-semibold text-amber-100"
+        >
+          1
+        </button>
+      </div>
+      <p className="mt-3 text-[11px] text-white/45">
+        Showing{" "}
+        <span className="text-[#f6f1e8]">{LABELS[lens].toLowerCase()}</span>{" "}
+        spots
+      </p>
+    </Stage>
+  )
+}
+
+/** D: lenses as map legend docked bottom-left. */
+function OptionD() {
+  const [lens, setLens] = useState<Lens>("eat")
+  return (
+    <Stage
+      bottom={
+        <div className="pointer-events-auto flex items-end justify-between gap-3">
+          <div className="rounded-2xl border border-white/12 bg-black/70 p-2 shadow-lg backdrop-blur-md">
+            <p className="mb-1.5 px-1 text-[9px] font-semibold tracking-[0.14em] text-white/40 uppercase">
+              Lenses
+            </p>
+            <div className="flex flex-col gap-1">
+              {LENSES.map((l) => {
+                const on = lens === l
+                return (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setLens(l)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl px-1.5 py-1 text-left transition-colors",
+                      on ? "bg-[#f6f1e8] text-[#11100e]" : "text-white/80 hover:bg-white/8"
+                    )}
+                  >
+                    <ClayImg kind={l} size={28} className="rounded-[30%]" />
+                    <span className="pr-2 text-[11px] font-semibold">
+                      {LABELS[l]}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold text-amber-100"
+          >
+            1 unsorted
+          </button>
         </div>
-      ))}
-    </div>
+      }
+    >
+      <p className="max-w-[14rem] text-[11px] text-white/40">
+        Map stays open. Lenses live as a legend on the board.
+      </p>
+    </Stage>
+  )
+}
+
+/** E: one hero clay icon + swipeable lens story. */
+function OptionE() {
+  const [lens, setLens] = useState<Lens>("eat")
+  const blurb: Record<Lens, string> = {
+    all: "Everything you saved in Athens",
+    eat: "Tables worth the walk",
+    see: "Views you bookmarked",
+    do: "Things to go do",
+    stay: "Beds and bases",
+  }
+  const i = LENSES.indexOf(lens)
+  return (
+    <Stage
+      bottom={
+        <div className="flex items-center justify-center gap-1.5">
+          {LENSES.map((l) => (
+            <button
+              key={l}
+              type="button"
+              aria-label={LABELS[l]}
+              onClick={() => setLens(l)}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                lens === l ? "w-5 bg-[#f6f1e8]" : "w-1.5 bg-white/25"
+              )}
+            />
+          ))}
+        </div>
+      }
+    >
+      <div className="flex flex-col items-center pt-2 text-center">
+        <ClayImg
+          kind={lens}
+          size={88}
+          className="rounded-[26%] shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+        />
+        <p className="mt-3 font-heading text-2xl text-[#f6f1e8]">
+          {LABELS[lens]}
+        </p>
+        <p className="mt-1 text-sm text-white/55">{blurb[lens]}</p>
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            type="button"
+            disabled={i === 0}
+            onClick={() => setLens(LENSES[i - 1]!)}
+            className="rounded-full border border-white/15 px-3 py-1 text-xs text-white disabled:opacity-30"
+          >
+            Prev
+          </button>
+          <button
+            type="button"
+            disabled={i === LENSES.length - 1}
+            onClick={() => setLens(LENSES[i + 1]!)}
+            className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white disabled:opacity-30"
+          >
+            Next lens
+          </button>
+        </div>
+      </div>
+    </Stage>
   )
 }
 
@@ -184,16 +376,25 @@ export function ReviewLensIcons() {
             variant="secondary"
             className="mb-3 tracking-[0.14em] uppercase"
           >
-            Mock review · icon styles
+            Mock review · clay icons in app
           </Badge>
           <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            Category icon styles
+            How clay icons show up
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Five illustration languages for All / Eat / See / Do / Stay. Same
-            Cinema Map pill strip in every option so you are judging style, not
-            layout.
+            Soft clay art is locked. Five ways to place All / Eat / See / Do /
+            Stay on the Cinema Map location screen.
           </p>
+          <div className="mt-4 mb-2 flex flex-wrap gap-3">
+            {LENSES.map((l) => (
+              <div key={l} className="flex flex-col items-center gap-1">
+                <ClayImg kind={l} size={52} className="rounded-2xl shadow-sm" />
+                <span className="text-[10px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+                  {LABELS[l]}
+                </span>
+              </div>
+            ))}
+          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button asChild variant="secondary">
               <Link to="/place/athens">Back to Athens</Link>
@@ -207,57 +408,52 @@ export function ReviewLensIcons() {
         <div className="space-y-12">
           <OptionBlock
             letter="A"
-            title="Soft clay"
-            note="Toy-like 3D clay props with soft light. Wins when the app should feel warm, friendly, and collectible."
-            keeps="Clear metaphor per lens"
-            costs="Heavier files; can fight the dark map chrome"
+            title="Pill + sticker"
+            note="Clay icons drop into the current pill strip beside labels. Wins when you want the least layout change."
+            keeps="Familiar density"
+            costs="Art stays small"
           >
-            <StyleRoster style="clay" />
-            <StyleStrip style="clay" />
+            <OptionA />
           </OptionBlock>
 
           <OptionBlock
             letter="B"
-            title="Flat stickers"
-            note="Bold flat color shapes, no shading. Wins when icons need to stay sharp at 24px and load like UI, not renders."
-            keeps="Simple production pipeline"
-            costs="Less 'fun object' presence than clay"
+            title="Sticker shelf"
+            note="Larger clay stickers in a horizontal shelf under the title. Wins when icons should feel thumbable and toy-like."
+            keeps="Icon-first scan"
+            costs="Taller chrome over the map"
           >
-            <StyleRoster style="flat" imgClass="rounded-xl" />
-            <StyleStrip style="flat" imgClass="rounded-xl" />
+            <OptionB />
           </OptionBlock>
 
           <OptionBlock
             letter="C"
-            title="Guidebook engraving"
-            note="Cream line glyphs on charcoal tiles. Wins when Cinema Map should feel editorial and filmic, not playful toy."
-            keeps="Matches dark chrome closely"
-            costs="Less friendly; metaphors read quieter"
+            title="Expanding rail"
+            note="Compact clay capsule; only the active lens spells its name. Wins on tight widths while keeping art readable."
+            keeps="One control"
+            costs="Idle lenses lose words"
           >
-            <StyleRoster style="engraved" imgClass="rounded-lg" />
-            <StyleStrip style="engraved" imgClass="rounded-lg" />
+            <OptionC />
           </OptionBlock>
 
           <OptionBlock
             letter="D"
-            title="Enamel pins"
-            note="Hard cloisonne badges with metal rims. Wins if lenses should feel like souvenirs you collect on the trip."
-            keeps="Strong identity, very 'object'"
-            costs="Busy next to map labels; gold can feel premium-tour"
+            title="Map legend"
+            note="Lenses move to a bottom-left legend so the top bar stays light. Wins when the map should stay the hero."
+            keeps="Full vertical map"
+            costs="New docking pattern"
           >
-            <StyleRoster style="enamel" imgClass="rounded-full" />
-            <StyleStrip style="enamel" imgClass="rounded-full" />
+            <OptionD />
           </OptionBlock>
 
           <OptionBlock
             letter="E"
-            title="Scrapbook marker"
-            note="Wobbly felt-tip drawings on paper. Wins when saves should feel personal, like notes from your own reel pile."
-            keeps="Maximum personality"
-            costs="Hardest to keep consistent across new lenses"
+            title="Lens story"
+            note="One giant clay hero at a time with prev/next. Wins if filtering should feel like flipping collectible cards."
+            keeps="Maximum charm"
+            costs="Slowest to switch lenses"
           >
-            <StyleRoster style="sketch" imgClass="rounded-lg" />
-            <StyleStrip style="sketch" imgClass="rounded-lg" />
+            <OptionE />
           </OptionBlock>
         </div>
       </div>

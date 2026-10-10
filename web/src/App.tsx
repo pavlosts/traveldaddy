@@ -8,6 +8,7 @@ import {
 import { ReviewDirections } from "@/pages/ReviewDirections"
 import { ReviewLensIcons } from "@/pages/ReviewLensIcons"
 import { ReviewMotion } from "@/pages/ReviewMotion"
+import { ReviewRoutePath } from "@/pages/ReviewRoutePath"
 import { DigestProvider } from "@/prototype/DigestContext"
 import { DirectoryPage } from "@/prototype/DirectoryPage"
 import { LocationPage } from "@/prototype/LocationPage"
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/review" element={<ReviewDirections />} />
         <Route path="/review/lens-icons" element={<ReviewLensIcons />} />
         <Route path="/review/motion" element={<ReviewMotion />} />
+        <Route path="/review/route-path" element={<ReviewRoutePath />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

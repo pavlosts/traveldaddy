@@ -26,3 +26,4 @@ Append only. Do not reopen quietly.
 - Working prototype ships in `web/` at `/` (directory) and `/place/:cityId` (location). Concept gallery stays at `/review`.
 - Location **Plan day**: greedy proximity chain with lens pacing (see/do → eat → see/do → eat). Shows numbered stops, walk-minute timeline, dashed route on the map, and fills AM/Mid/PM. Manual day strip still works. Stay spots are optional bookends only.
 - Location **Plan day**: greedy proximity chain with lens mix (see/do ↔ eat); stay is optional bookend only. Shows numbered stops, walk minutes, timeline sheet, and dashed route on the map. Fills AM/Mid/PM from first / middle / last stop.
+- Plan day path style locked to **Walk Ribbon** (cream corridor + spine). While a plan is active, map pins switch to numbered label pills; clay stickers return when the plan is cleared.
