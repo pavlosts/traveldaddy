@@ -74,7 +74,7 @@ def knock_out_plate(src: Path, dst: Path, tol: float = 28, feather: int = 2):
     pct = 100.0 * (alpha < 0.05).mean()
     print(
         f"wrote {dst.relative_to(ROOT.parent.parent)} "
-        f"plate≈{plate:.1f} transparent≈{pct:.1f}%"
+        f"plate~{plate:.1f} transparent~{pct:.1f}%"
     )
 
 
