@@ -2,7 +2,7 @@
 
 Source file: [demo-data.json](demo-data.json)
 
-- **Cities:** Athens, Lisbon, Tokyo
+- **Cities:** Athens, Lisbon, Tokyo, New York, Mexico City, Bangkok, Cape Town, Sydney
 - **Saves:** mix of `spot` (map pin), `tip` (Tips shelf, no pin), `unsorted` (needs Sort)
 - **reelUrl:** dummy `example.com` links (not real IG/TikTok)
 

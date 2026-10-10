@@ -85,7 +85,7 @@ Rule: each saved reel is either one map pin/card **or** one Tips-shelf card. Nev
 ### Directory → location
 Directory = location cover image + name + counts (spots / tips). Tap → this page. No blurbs.
 
-**v1 demo data:** `fixtures/demo-data.json` — Athens, Lisbon, Tokyo.
+**v1 demo data:** `fixtures/demo-data.json` — Athens, Lisbon, Tokyo, New York, Mexico City, Bangkok, Cape Town, Sydney.
 
 ### What else (still useful, keep light)
 - **Cluster + zoom** on busy maps

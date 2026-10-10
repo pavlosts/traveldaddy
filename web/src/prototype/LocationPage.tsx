@@ -11,7 +11,7 @@ import {
   LeafletPlacesMap,
   type LeafletPlacesMapHandle,
 } from "@/components/review/LeafletPlacesMap"
-import { cityById, type Lens } from "@/data/demo"
+import { cities, cityById, type Lens } from "@/data/demo"
 import { CinemaChrome, CinemaStatus } from "./CinemaChrome"
 import { useDigest } from "./DigestContext"
 import {
@@ -90,19 +90,16 @@ export function LocationPage() {
   const [chromeIn, setChromeIn] = useState(!handoff)
   const {
     spotsFor,
-    tipsFor,
     unsortedFor,
     setDaySlot,
     applyDayPlan,
   } = useDigest()
 
   const spots = spotsFor(city.id)
-  const tips = tipsFor(city.id)
   const unsorted = unsortedFor(city.id)
 
   const [lens, setLens] = useState<Lens | "all">("all")
   const [activeSpotId, setActiveSpotId] = useState(spots[0]?.id)
-  const [tipsOpen, setTipsOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [itinerary, setItinerary] = useState<DayItinerary | null>(null)
@@ -299,13 +296,6 @@ export function LocationPage() {
                 </button>
               </>
             ) : null}
-            <button
-              type="button"
-              className="max-w-[9rem] truncate rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/15"
-              onClick={() => setTipsOpen(true)}
-            >
-              Tips · {tips.length}
-            </button>
           </div>
         </div>
 
@@ -517,54 +507,6 @@ export function LocationPage() {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={tipsOpen} onOpenChange={setTipsOpen}>
-        <SheetContent
-          side="bottom"
-          className="max-h-[70vh] rounded-t-3xl border-white/10 bg-[#1c1b19] text-[#f6f1e8]"
-        >
-          <SheetHeader className="text-left">
-            <SheetTitle className="font-heading text-[#f6f1e8]">
-              Tips · {city.name}
-            </SheetTitle>
-            <SheetDescription className="text-white/55">
-              Generic advice. No map pin.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="space-y-2 px-4 pb-6">
-            {tips.length === 0 ? (
-              <p className="text-sm text-white/55">No tips yet for this place.</p>
-            ) : (
-              tips.map((tip) => (
-                <div
-                  key={tip.id}
-                  className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-2.5"
-                >
-                  <img
-                    src={tip.thumb}
-                    alt=""
-                    className="size-12 rounded-xl bg-white/10 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.visibility = "hidden"
-                    }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{tip.title}</p>
-                    <a
-                      href={tip.reelUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] text-white/55 underline-offset-2 hover:underline"
-                    >
-                      Open original
-                    </a>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
-
       <SortSheet
         open={sortOpen}
         onOpenChange={setSortOpen}
@@ -576,5 +518,5 @@ export function LocationPage() {
 }
 
 function citiesHas(cityId: string) {
-  return ["athens", "lisbon", "tokyo"].includes(cityId)
+  return cities.some((c) => c.id === cityId)
 }
