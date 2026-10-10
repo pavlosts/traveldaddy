@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "notes": "Hackathon fixtures. Dummy reel links. No live IG/TikTok. Hero images are placeholder location photos.",
+  "cities": [
+    {
+      "id": "athens",
+      "name": "Athens",
+      "heroImage": "https://images.unsplash.com/photo-1555993539-1732b0258235?w=1200&q=80",
+      "mapCenter": { "lat": 37.9838, "lng": 23.7275 },
+      "defaultZoom": 13
+    },
+    {
+      "id": "lisbon",
+      "name": "Lisbon",
+      "heroImage": "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1200&q=80",
+      "mapCenter": { "lat": 38.7223, "lng": -9.1393 },
+      "defaultZoom": 13
+    },
+    {
+      "id": "tokyo",
+      "name": "Tokyo",
+      "heroImage": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80",
+      "mapCenter": { "lat": 35.6762, "lng": 139.6503 },
+      "defaultZoom": 12
+    }
+  ],
+  "saves": [
+    {
+      "id": "ath-01",
+      "cityId": "athens",
+      "kind": "spot",
+      "lens": "eat",
+      "title": "Late souvlaki in Exarchia",
+      "thumb": "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/athens-souvlaki-dummy",
+      "lat": 37.9865,
+      "lng": 23.7342,
+      "venueName": "Exarchia street grill"
+    },
+    {
+      "id": "ath-02",
+      "cityId": "athens",
+      "kind": "spot",
+      "lens": "see",
+      "title": "Sunset from Filopappou",
+      "thumb": "https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=80",
+      "source": "tiktok",
+      "reelUrl": "https://example.com/short/athens-filopappou-dummy",
+      "lat": 37.9682,
+      "lng": 23.7215,
+      "venueName": "Filopappou Hill"
+    },
+    {
+      "id": "ath-03",
+      "cityId": "athens",
+      "kind": "tip",
+      "lens": null,
+      "title": "Metro day pass beats taxis",
+      "thumb": "https://images.unsplash.com/photo-1544620341-11cbdc6839cc?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/athens-metro-tip-dummy",
+      "lat": null,
+      "lng": null,
+      "venueName": null
+    },
+    {
+      "id": "ath-04",
+      "cityId": "athens",
+      "kind": "unsorted",
+      "lens": null,
+      "title": "Hidden courtyard cafe clip",
+      "thumb": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
+      "source": "tiktok",
+      "reelUrl": "https://example.com/short/athens-unsorted-cafe-dummy",
+      "lat": null,
+      "lng": null,
+      "venueName": null
+    },
+    {
+      "id": "lis-01",
+      "cityId": "lisbon",
+      "kind": "spot",
+      "lens": "eat",
+      "title": "Pastel de nata queue hack",
+      "thumb": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/lisbon-nata-dummy",
+      "lat": 38.6979,
+      "lng": -9.2034,
+      "venueName": "Belém bakery line"
+    },
+    {
+      "id": "lis-02",
+      "cityId": "lisbon",
+      "kind": "spot",
+      "lens": "see",
+      "title": "Tram 28 skip the crush",
+      "thumb": "https://images.unsplash.com/photo-1513735492246-483525079686?w=600&q=80",
+      "source": "tiktok",
+      "reelUrl": "https://example.com/short/lisbon-tram28-dummy",
+      "lat": 38.7139,
+      "lng": -9.1334,
+      "venueName": "Tram 28 route"
+    },
+    {
+      "id": "lis-03",
+      "cityId": "lisbon",
+      "kind": "spot",
+      "lens": "do",
+      "title": "LX Factory Sunday stroll",
+      "thumb": "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/lisbon-lx-dummy",
+      "lat": 38.7035,
+      "lng": -9.1785,
+      "venueName": "LX Factory"
+    },
+    {
+      "id": "lis-04",
+      "cityId": "lisbon",
+      "kind": "tip",
+      "lens": null,
+      "title": "Hills: wear real shoes",
+      "thumb": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80",
+      "source": "tiktok",
+      "reelUrl": "https://example.com/short/lisbon-shoes-tip-dummy",
+      "lat": null,
+      "lng": null,
+      "venueName": null
+    },
+    {
+      "id": "lis-05",
+      "cityId": "lisbon",
+      "kind": "unsorted",
+      "lens": null,
+      "title": "Rooftop wine at golden hour",
+      "thumb": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/lisbon-unsorted-rooftop-dummy",
+      "lat": null,
+      "lng": null,
+      "venueName": null
+    },
+    {
+      "id": "tok-01",
+      "cityId": "tokyo",
+      "kind": "spot",
+      "lens": "eat",
+      "title": "Conveyor sushi near Shibuya",
+      "thumb": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80",
+      "source": "tiktok",
+      "reelUrl": "https://example.com/short/tokyo-sushi-dummy",
+      "lat": 35.6595,
+      "lng": 139.7004,
+      "venueName": "Shibuya sushi chain"
+    },
+    {
+      "id": "tok-02",
+      "cityId": "tokyo",
+      "kind": "spot",
+      "lens": "see",
+      "title": "TeamLab night slots",
+      "thumb": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/tokyo-teamlab-dummy",
+      "lat": 35.6496,
+      "lng": 139.7884,
+      "venueName": "teamLab Planets"
+    },
+    {
+      "id": "tok-03",
+      "cityId": "tokyo",
+      "kind": "tip",
+      "lens": null,
+      "title": "IC card before anything else",
+      "thumb": "https://images.unsplash.com/photo-1544620341-11cbdc6839cc?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/tokyo-ic-card-tip-dummy",
+      "lat": null,
+      "lng": null,
+      "venueName": null
+    },
+    {
+      "id": "tok-04",
+      "cityId": "tokyo",
+      "kind": "spot",
+      "lens": "stay",
+      "title": "Capsule near Shinjuku station",
+      "thumb": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80",
+      "source": "tiktok",
+      "reelUrl": "https://example.com/short/tokyo-capsule-dummy",
+      "lat": 35.6938,
+      "lng": 139.7034,
+      "venueName": "Shinjuku capsule hotel"
+    },
+    {
+      "id": "tok-05",
+      "cityId": "tokyo",
+      "kind": "unsorted",
+      "lens": null,
+      "title": "Alley ramen steam clip",
+      "thumb": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&q=80",
+      "source": "instagram",
+      "reelUrl": "https://example.com/reel/tokyo-unsorted-ramen-dummy",
+      "lat": null,
+      "lng": null,
+      "venueName": null
+    }
+  ]
+}
